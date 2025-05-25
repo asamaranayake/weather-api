@@ -1,126 +1,96 @@
-// 🎯 Simple Jenkins Pipeline for Kids to Learn CI/CD
-// This file tells Jenkins how to build and test our Weather App!
-
 pipeline {
-    agent any  // Run on any available computer
+    agent any
     
-    // 🛠️ Tools we need (like having the right LEGO pieces!)
     tools {
-        maven 'Maven 3.9.9'  // Tool to build our app
-        jdk 'JDK 11'         // Java to run our app
+        maven 'Maven 3.9.9'
+        jdk 'JDK 11'
     }
     
-    // 📋 Step-by-step instructions for Jenkins
     stages {
-        
-        // Step 1: Get the code 📥
-        stage('Get Code') {
+        stage('Checkout') {
             steps {
-                echo '📥 Getting our code from the computer...'
-                checkout scm  // Download the latest code
+                git branch: 'main', url: 'https://github.com/asamaranayake/weather-api.git'
             }
         }
         
-        // Step 2: Build the app 🔨
-        stage('Build App') {
+        stage('Build') {
             steps {
-                echo '🔨 Building our Weather App...'
-                sh 'mvn clean compile'  // Turn code into an app
+                echo '🔨 Building the application...'
+                sh 'mvn clean compile'
             }
         }
         
-        // Step 3: Test the app 🧪
-        stage('Test App') {
-            steps {
-                echo '🧪 Testing our app to make sure it works...'
-                sh 'mvn test'  // Run tests to check everything is OK
+        stage('Test') {
+            steps{
+                echo '🧪 Running tests...'
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    // Archive test results
+                    junit '**/target/surefire-reports/*.xml'
+                }
             }
         }
         
-        // Step 4: Package the app 📦
-        stage('Package App') {
+        stage('Code Coverage') {
             steps {
-                echo '📦 Wrapping up our app in a nice package...'
-                sh 'mvn package -DskipTests'  // Create a .jar file
+                echo '📊 Generating code coverage report...'
+                sh 'mvn jacoco:report'
                 
-                // Save our app package for later
+                // Publish JaCoCo coverage report
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'JaCoCo Coverage Report'
+                ])
+                
+                // Check coverage thresholds
+                sh 'mvn jacoco:check'
+            }
+        }
+        
+        stage('Package') {
+            steps {
+                echo '📦 Packaging the application...'
+                sh 'mvn package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
-        
-        // Step 5: Deploy the app 🚀
-        stage('Deploy App') {
-            steps {
-                echo '🚀 Starting our Weather App...'
-                script {
-                    // Stop any old version running
-                    sh 'lsof -ti:8081 | xargs kill -9 || true'
-                    sh 'sleep 3'
-                    
-                    // Start our new app
-                    sh '''
-                        cd target
-                        nohup java -jar *.jar > app.log 2>&1 &
-                        echo "App is starting..."
-                        sleep 10
-                    '''
-                }
-            }
-        }
-        
-        // Step 6: Check if app is working 🩺
-        stage('Health Check') {
-            steps {
-                echo '🩺 Checking if our app is healthy...'
-                script {
-                    // Try to talk to our app
-                    def result = sh(
-                        script: 'curl -f http://localhost:8081/actuator/health || echo "App not ready"',
-                        returnStdout: true
-                    ).trim()
-                    
-                    if (result.contains('"status":"UP"')) {
-                        echo '✅ App is healthy and running!'
-                        echo '🌤️  Try it: curl http://localhost:8081/api/weather/London'
-                    } else {
-                        echo '⚠️  App might need more time to start'
-                    }
-                }
-            }
-        }
     }
     
-    // 📢 What to do when we're done
     post {
         success {
             echo '''
-            🎉 SUCCESS! Our Weather App is ready!
+            🎉 SUCCESS! Pipeline completed with code coverage!
             
-            ✅ Code downloaded
-            ✅ App built
+            ✅ Code checked out
+            ✅ Application built
             ✅ Tests passed
-            ✅ App packaged
-            ✅ App deployed
-            ✅ Health check done
+            ✅ Code coverage generated
+            ✅ Application packaged
             
-            🌐 Your app is running at: http://localhost:8081
-            🌤️  Test it: curl http://localhost:8081/api/weather/London
+            📊 Check the "JaCoCo Coverage Report" for detailed coverage metrics!
             '''
         }
-        
         failure {
             echo '''
-            😞 OOPS! Something went wrong.
+            ❌ Pipeline failed!
             
-            Don't worry - this is how we learn!
-            Check the logs to see what happened.
+            Possible issues:
+            • Build compilation errors
+            • Test failures
+            • Code coverage below threshold (50%)
+            • Packaging issues
+            
+            Check the logs above for details! 🔍
             '''
         }
-        
         always {
             echo '🧹 Cleaning up...'
-            // Clean up test results but keep them for Jenkins to show
-            junit '**/target/surefire-reports/*.xml'
         }
     }
-} 
+}
