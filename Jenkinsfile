@@ -36,6 +36,9 @@ pipeline {
 
         echo "Starting app..."
         sh 'nohup java -jar $WORKSPACE/target/weather-api-0.0.1-SNAPSHOT.jar > $WORKSPACE/app.log 2>&1 &'
+
+        echo "Running App .... "
+        sh 'mvn spring-boot:run'
       }
     }
   }
