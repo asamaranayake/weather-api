@@ -1,8 +1,9 @@
 pipeline {
     agent any
 
-    tools{
-        maven 'Maven-3.9.10'
+    // Configure tools (Maven from Global Tool Configuration)
+    tools {
+        maven 'Maven-3.9.10'  // Your configured Maven name
     }
     
     // Simple environment variables for students
@@ -49,11 +50,8 @@ pipeline {
                 
                 script {
                     sh '''
-                        # Make sure we have Maven
-                        if ! command -v mvn &> /dev/null; then
-                            echo "📦 Installing Maven..."
-                            apt-get update && apt-get install -y maven
-                        fi
+                        echo "🔍 Using Maven from Jenkins Global Tool Configuration..."
+                        mvn --version
                         
                         echo "🧪 Running unit tests..."
                         mvn clean test
