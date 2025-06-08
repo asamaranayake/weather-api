@@ -59,11 +59,15 @@ pipeline {
             }
             post {
                 always {
-                    // Show test results
-                    publishTestResults(
-                        testResultsPattern: 'target/surefire-reports/*.xml',
-                        allowEmptyResults: true
-                    )
+                    // Correct Jenkins syntax for test results
+                    script {
+                        if (fileExists('target/surefire-reports/*.xml')) {
+                            junit 'target/surefire-reports/*.xml'
+                            echo "📊 Test results published!"
+                        } else {
+                            echo "📊 No test results found (this is OK for simple projects)"
+                        }
+                    }
                 }
             }
         }
@@ -204,7 +208,15 @@ pipeline {
         
         always {
             echo "🧹 Cleaning up workspace..."
-            cleanWs()
+            // Use built-in Jenkins method (no plugin required)
+            script {
+                try {
+                    deleteDir()
+                    echo "✅ Workspace cleaned"
+                } catch (Exception e) {
+                    echo "⚠️ Workspace cleanup skipped (not critical)"
+                }
+            }
         }
     }
 } 
