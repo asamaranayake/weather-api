@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-master
+    restart: unless-stopped
+    ports:
+      - "8080:8080"      # Jenkins Web UI
+      - "50000:50000"    # Jenkins Agent port
+    volumes:
+      # Jenkins data persistence
+      - jenkins_home:/var/jenkins_home
+      
+      # Docker socket for Docker-in-Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+      # Docker binary (macOS specific paths)
+      - /usr/local/bin/docker:/usr/local/bin/docker:ro
+      - /opt/homebrew/bin/docker:/opt/homebrew/bin/docker:ro
+      
+      # Kubernetes config
+      - ~/.kube:/var/jenkins_home/.kube:ro
+      
+      # kubectl binary (macOS specific paths)
+      - /usr/local/bin/kubectl:/usr/local/bin/kubectl:ro
+      - /opt/homebrew/bin/kubectl:/opt/homebrew/bin/kubectl:ro
+      
+      # Maven cache (optional, for faster builds)
+      - maven_cache:/var/jenkins_home/.m2
+      
+    environment:
+      # Java options for Jenkins
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx1024m
+      
+      # Docker configuration
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      
+      # Kubernetes configuration
+      - KUBECONFIG=/var/jenkins_home/.kube/config
+      
+    networks:
+      - jenkins-network
+    
+    # Security context (adjust as needed)
+    user: root  # Required for Docker socket access
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Jenkins agent for distributed builds
+  jenkins-agent:
+    image: jenkins/inbound-agent:latest
+    container_name: jenkins-agent-1
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_SECRET=${JENKINS_AGENT_SECRET:-changeme}
+      - JENKINS_AGENT_NAME=agent-1
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+    volumes:
+      - agent_workspace:/home/jenkins/agent
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/local/bin/docker:/usr/local/bin/docker:ro
+      - ~/.kube:/home/jenkins/.kube:ro
+    networks:
+      - jenkins-network
+    depends_on:
+      - jenkins
+
+volumes:
+  jenkins_home:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/jenkins_home
+      
+  maven_cache:
+    driver: local
+    
+  agent_workspace:
+    driver: local
+
+networks:
+  jenkins-network:
+    driver: bridge 

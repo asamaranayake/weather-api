@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-api-config
+  namespace: weather-api-dev
+  labels:
+    app: weather-api
+    environment: dev
+data:
+  # Application configuration
+  server.port: "8081"
+  management.endpoints.web.exposure.include: "health,info,metrics"
+  logging.level.root: "DEBUG"
+  logging.level.com.example: "DEBUG"
+  spring.profiles.active: "dev"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-api-config
+  namespace: weather-api-qa
+  labels:
+    app: weather-api
+    environment: qa
+data:
+  # Application configuration
+  server.port: "8081"
+  management.endpoints.web.exposure.include: "health,info,metrics"
+  logging.level.root: "INFO"
+  logging.level.com.example: "INFO"
+  spring.profiles.active: "staging"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-api-config
+  namespace: weather-api-prod
+  labels:
+    app: weather-api
+    environment: prod
+data:
+  # Application configuration
+  server.port: "8081"
+  management.endpoints.web.exposure.include: "health,info,metrics,prometheus"
+  logging.level.root: "WARN"
+  logging.level.com.example: "INFO"
+  spring.profiles.active: "prod" 

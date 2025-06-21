@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: weather-api-dev
+  labels:
+    name: weather-api-dev
+    environment: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: weather-api-qa
+  labels:
+    name: weather-api-qa
+    environment: qa
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: weather-api-prod
+  labels:
+    name: weather-api-prod
+    environment: production

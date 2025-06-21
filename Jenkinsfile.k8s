@@ -1,0 +1,274 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Application Configuration
+        APP_NAME = 'weather-api'
+        IMAGE_NAME = 'weather-api'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        NAMESPACE = 'weather-api'
+        
+        // Docker Configuration
+        DOCKER_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
+        DOCKER_LATEST = "${IMAGE_NAME}:latest"
+        
+        // Kubernetes Configuration
+        KUBECONFIG_PATH = "${HOME}/.kube/config"
+        
+        // Jenkins PATH Configuration (macOS)
+        PATH = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
+        
+        // Build Information
+        BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim()
+    }
+    
+    stages {
+        stage('🔍 Pre-flight Checks') {
+            steps {
+                script {
+                    echo "🚀 Starting Simple Weather API Deployment"
+                    echo "📦 Build Number: ${BUILD_NUMBER}"
+                    echo "🏷️  Image Tag: ${IMAGE_TAG}"
+                    echo "⏰ Build Time: ${BUILD_TIMESTAMP}"
+                    
+                    // Check if Docker is available
+                    sh '''
+                        echo "🐳 Checking Docker..."
+                        docker --version || exit 1
+                        docker info > /dev/null 2>&1 || (echo "❌ Docker daemon not running" && exit 1)
+                        echo "✅ Docker is running"
+                    '''
+                    
+                    // Check if kubectl is available
+                    sh '''
+                        echo "☸️  Checking Kubernetes..."
+                        kubectl version --client || exit 1
+                        kubectl cluster-info > /dev/null 2>&1 || (echo "❌ Kubernetes cluster not accessible" && exit 1)
+                        echo "✅ Kubernetes cluster is accessible"
+                    '''
+                }
+            }
+        }
+        
+        stage('📥 Checkout Source Code') {
+            steps {
+                script {
+                    echo "📥 Checking out source code..."
+                    checkout scm
+                    
+                    // Display git information
+                    sh '''
+                        echo "📋 Git Information:"
+                        echo "Branch: $(git branch --show-current || echo 'detached HEAD')"
+                        echo "Commit: $(git rev-parse --short HEAD)"
+                        echo "Author: $(git log -1 --pretty=format:'%an <%ae>')"
+                        echo "Message: $(git log -1 --pretty=format:'%s')"
+                    '''
+                }
+            }
+        }
+        
+        stage('📦 Build Application') {
+            steps {
+                script {
+                    echo "📦 Building Weather API application..."
+                    sh '''
+                        echo "🔨 Building application with Maven..."
+                        mvn clean package -DskipTests=true
+                        
+                        # Verify JAR was created
+                        if [ -f target/*.jar ]; then
+                            echo "✅ JAR file created successfully:"
+                            ls -la target/*.jar
+                        else
+                            echo "❌ JAR file not found!" && exit 1
+                        fi
+                        
+                        echo "📋 Build completed successfully!"
+                    '''
+                }
+            }
+        }
+        
+        stage('🐳 Build Docker Image') {
+            steps {
+                script {
+                    echo "🐳 Building Docker image: ${DOCKER_IMAGE}"
+                    sh '''
+                        echo "🏗️  Building Docker image..."
+                        docker build -t ${DOCKER_IMAGE} -t ${DOCKER_LATEST} .
+                        
+                        echo "📋 Image build completed:"
+                        docker images | grep ${IMAGE_NAME}
+                        
+                        echo "🔍 Image size:"
+                        docker images ${DOCKER_IMAGE} --format "table {{.Repository}}\\t{{.Tag}}\\t{{.Size}}"
+                    '''
+                }
+            }
+        }
+        
+        stage('🧹 Cleanup Previous Deployment') {
+            steps {
+                script {
+                    echo "🧹 Cleaning up previous deployment..."
+                    sh '''
+                        echo "🗑️  Removing previous Kubernetes resources..."
+                        kubectl delete -k k8s/ --ignore-not-found=true
+                        
+                        echo "⏳ Waiting for cleanup to complete..."
+                        sleep 10
+                        
+                        echo "✅ Cleanup completed"
+                    '''
+                }
+            }
+        }
+        
+        stage('☸️  Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "☸️  Deploying Weather API to Kubernetes..."
+                    sh '''
+                        echo "🚀 Applying Kubernetes manifests..."
+                        
+                        # Apply all resources
+                        kubectl apply -k k8s/
+                        
+                        echo "📋 Deployment status:"
+                        kubectl get all -n ${NAMESPACE}
+                        
+                        echo "⏳ Waiting for deployment to be ready..."
+                        kubectl wait --for=condition=available --timeout=300s deployment/${APP_NAME} -n ${NAMESPACE}
+                        
+                        echo "✅ Weather API deployed successfully!"
+                    '''
+                }
+            }
+        }
+        
+        stage('🔍 Verify Deployment') {
+            steps {
+                script {
+                    echo "🔍 Verifying Weather API deployment..."
+                    sh '''
+                        echo "🏥 Checking pod status..."
+                        kubectl get pods -n ${NAMESPACE} -o wide
+                        
+                        echo "🔗 Checking service endpoints..."
+                        kubectl get endpoints -n ${NAMESPACE}
+                        
+                        echo "📊 Checking deployment status..."
+                        kubectl rollout status deployment/${APP_NAME} -n ${NAMESPACE}
+                        
+                        echo "✅ Deployment verification completed!"
+                    '''
+                }
+            }
+        }
+        
+        stage('📊 Access Information') {
+            steps {
+                script {
+                    echo "📊 Weather API Access Information:"
+                    sh '''
+                        echo ""
+                        echo "🎉 Weather API Deployment Summary:"
+                        echo "=================================="
+                        echo "🌤️  Application: ${APP_NAME}"
+                        echo "📦 Build: ${BUILD_NUMBER}"
+                        echo "🏷️  Image: ${DOCKER_IMAGE}"
+                        echo "📍 Namespace: ${NAMESPACE}"
+                        echo "⏰ Deployed: ${BUILD_TIMESTAMP}"
+                        echo ""
+                        
+                        echo "🌐 API Endpoints:"
+                        echo "▶️  Main API: http://localhost:8080/weather-api"
+                        echo "🌤️  Weather: http://localhost:8080/weather-api/weather/{city}"
+                        echo "📊 Status: http://localhost:8080/weather-api/status"
+                        echo "🏥 Health: http://localhost:8080/actuator/health"
+                        echo ""
+                        
+                        echo "🚀 To Access Your Weather API:"
+                        echo "kubectl port-forward service/${APP_NAME}-service 8080:80 -n ${NAMESPACE}"
+                        echo ""
+                        
+                        echo "📋 Current Resources:"
+                        kubectl get all -n ${NAMESPACE}
+                        echo ""
+                        
+                        echo "📝 Management Commands:"
+                        echo "View Logs: kubectl logs -f deployment/${APP_NAME} -n ${NAMESPACE}"
+                        echo "Scale App: kubectl scale deployment ${APP_NAME} --replicas=5 -n ${NAMESPACE}"
+                        echo "Delete App: kubectl delete -k k8s/"
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo "🧹 Pipeline cleanup..."
+                // Archive build artifacts
+                archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: true
+                
+                // Clean up old Docker images to save space
+                sh '''
+                    echo "🗑️  Cleaning up old Docker images..."
+                    docker image prune -f || true
+                '''
+            }
+        }
+        
+        success {
+            script {
+                echo """
+                🎉 SUCCESS! Weather API deployed successfully!
+                
+                🌤️  Your Weather API is now running!
+                
+                📱 Quick Access:
+                1️⃣  kubectl port-forward service/${APP_NAME}-service 8080:80 -n ${NAMESPACE}
+                2️⃣  Open: http://localhost:8080/weather-api
+                
+                🌐 Available Endpoints:
+                • Main API: /weather-api
+                • Get Weather: /weather-api/weather/{city}
+                • Status Check: /weather-api/status
+                • Health Check: /actuator/health
+                
+                📊 Monitor your deployment:
+                kubectl get all -n ${NAMESPACE}
+                kubectl logs -f deployment/${APP_NAME} -n ${NAMESPACE}
+                """
+            }
+        }
+        
+        failure {
+            script {
+                echo """
+                ❌ DEPLOYMENT FAILED!
+                
+                🔍 Troubleshooting steps:
+                1. Check build logs above
+                2. Verify Docker daemon is running
+                3. Verify Kubernetes cluster access
+                4. Check resource availability in cluster
+                
+                📋 Debug commands:
+                kubectl get events -n ${NAMESPACE} --sort-by='.lastTimestamp'
+                kubectl describe pods -n ${NAMESPACE}
+                docker logs \$(docker ps -lq)
+                """
+                
+                // Cleanup on failure
+                sh '''
+                    echo "🧹 Cleaning up failed deployment..."
+                    kubectl delete -k k8s/ --ignore-not-found=true || true
+                '''
+            }
+        }
+    }
+} 

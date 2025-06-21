@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-api-dev
+  namespace: weather-api-dev
+  labels:
+    app: weather-api
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-api
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: weather-api
+        environment: dev
+    spec:
+      containers:
+        - name: weather-api
+          image: weather-api:latest
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: SERVER_PORT
+              value: "8081"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-api-qa
+  namespace: weather-api-qa
+  labels:
+    app: weather-api
+    environment: qa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-api
+      environment: qa
+  template:
+    metadata:
+      labels:
+        app: weather-api
+        environment: qa
+    spec:
+      containers:
+        - name: weather-api
+          image: weather-api:latest
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "staging"
+            - name: SERVER_PORT
+              value: "8081"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-api-prod
+  namespace: weather-api-prod
+  labels:
+    app: weather-api
+    environment: prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-api
+      environment: prod
+  template:
+    metadata:
+      labels:
+        app: weather-api
+        environment: prod
+    spec:
+      containers:
+        - name: weather-api
+          image: weather-api:latest
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: SERVER_PORT
+              value: "8081"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

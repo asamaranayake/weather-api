@@ -1,0 +1,74 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-api-ingress-dev
+  namespace: weather-api-dev
+  labels:
+    app: weather-api
+    environment: dev
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /dev(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: weather-api-service
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-api-ingress-qa
+  namespace: weather-api-qa
+  labels:
+    app: weather-api
+    environment: qa
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /qa(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: weather-api-service
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-api-ingress-prod
+  namespace: weather-api-prod
+  labels:
+    app: weather-api
+    environment: prod
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /prod(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: weather-api-service
+            port:
+              number: 80 

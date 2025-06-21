@@ -1,0 +1,84 @@
+# Essential Jenkins Plugins for Docker + Kubernetes CI/CD
+
+# Core Pipeline Plugins
+workflow-aggregator:latest
+pipeline-stage-view:latest
+build-pipeline-plugin:latest
+
+# Docker Integration
+docker-plugin:latest
+docker-workflow:latest
+docker-build-step:latest
+
+# Kubernetes Integration
+kubernetes:latest
+kubernetes-cli:latest
+
+# SCM Plugins
+git:latest
+github:latest
+github-branch-source:latest
+
+# Build Tools
+maven-plugin:latest
+ant:latest
+gradle:latest
+
+# Testing & Quality
+junit:latest
+jacoco:latest
+htmlpublisher:latest
+cobertura:latest
+test-results-analyzer:latest
+
+# Deployment & Configuration
+config-file-provider:latest
+ssh-slaves:latest
+publish-over-ssh:latest
+
+# Monitoring & Notifications
+build-monitor-plugin:latest
+slack:latest
+email-ext:latest
+mailer:latest
+
+# Security
+matrix-auth:latest
+ldap:latest
+role-strategy:latest
+
+# UI & Visualization
+dashboard-view:latest
+view-job-filters:latest
+nested-view:latest
+sectioned-view:latest
+
+# Utilities
+timestamper:latest
+ws-cleanup:latest
+build-timeout:latest
+credentials-binding:latest
+ssh-credentials:latest
+plain-credentials:latest
+
+# Environment Management
+envfile:latest
+environment-script:latest
+build-environment:latest
+
+# Artifacts & Storage
+artifact-manager-s3:latest
+copy-artifact:latest
+archive-artifacts:latest
+
+# Advanced Pipeline Features
+pipeline-utility-steps:latest
+pipeline-maven:latest
+pipeline-docker:latest
+conditional-buildstep:latest
+parameterized-trigger:latest
+
+# Monitoring & Metrics
+prometheus:latest
+monitoring:latest
+metrics:latest 
