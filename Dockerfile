@@ -2,7 +2,7 @@
 # Jenkins will provide the source code - no git cloning here!
 
 # Stage 1: Build the application
-FROM maven:3.8.6-openjdk-11-alpine AS build
+FROM maven:alpine AS build
 
 # Set working directory
 WORKDIR /app
@@ -12,10 +12,10 @@ COPY pom.xml .
 COPY src ./src
 
 # Build the application
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Djacoco.skip=true
 
 # Stage 2: Run the application
-FROM openjdk:11-jre-alpine
+FROM maven:alpine
 
 # Install curl for health checks (using Alpine package manager)
 RUN apk add --no-cache curl
